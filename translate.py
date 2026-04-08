@@ -9,7 +9,6 @@ translator = Translator()
 async def translate(text_ : str, to_ : str, from_ : str):
     try:
         if to_ == None:
-            print("Auto detect")
             traducion = await translator.translate(text_,dest=to_)
         else:
             traducion = await translator.translate(text_,src=from_, dest=to_)

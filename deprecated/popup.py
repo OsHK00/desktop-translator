@@ -2,7 +2,6 @@ import customtkinter as ctk
 from translate import translate
 from clipboard import paste_traslation
 import asyncio
-
 class Popup:
     def __init__(self, root=None):
         self.root = root or ctk.CTk()

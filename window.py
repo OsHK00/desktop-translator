@@ -1,10 +1,10 @@
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QHBoxLayout
+from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
-from translate import simulate_traslation
+from translate import translate 
 from clipboard import paste_traslation
-import sys
-
+from PyQt6.QtCore import QTimer
+from qasync import QEventLoop, asyncSlot 
 
 class Window(QWidget):
     def __init__(self):
@@ -18,20 +18,25 @@ class Window(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.iconImage = QPixmap("assets/translate-icon.png")
         self.hide()
-
         self.base_text = ""
         self.translated_text = ""
         self.last_window = None
-
         self.container = self.configContainer()
         self.configLayout(self.container)
+        self.win_mode = None
+
+    def set_window_mode(self, mode):
+        self.win_mode = mode
+
+    def get_window_mode(self):
+        return self.win_mode
 
     def configContainer(self):
         container = QWidget(self)
         container.setGeometry(0, 0, 800, 60)
         container.setStyleSheet("""
             QWidget {
-                background-color: rgba(0, 0, 0, 180);
+                background-color: rgba(0, 0, 0, 255);
                 border-radius: 15px;
             }
         """)
@@ -39,11 +44,12 @@ class Window(QWidget):
 
     def configLayout(self, container):
         layout = QHBoxLayout(container)
-
         icon = QLabel()
         icon.setPixmap(self.iconImage.scaled(40, 40))
-
-        self.input_text = QLineEdit()
+        self.input_text = QLineEdit() 
+        #self.input_text.setPlaceholderText("Escribe el texto a traducir y presiona Enter...")
+        self.button = QPushButton("prueba")
+        
         self.input_text.setStyleSheet("""
             QLineEdit {
                 border: none;
@@ -53,11 +59,10 @@ class Window(QWidget):
                 padding: 8px;
             }
         """)
-
-        self.input_text.returnPressed.connect(self.traslate_text)  # 👈 Enter
-
+        self.input_text.returnPressed.connect(self.traslate_text)
         layout.addWidget(icon)
         layout.addWidget(self.input_text)
+        layout.addWidget(self.button)
 
     def get_base_text(self):
         return self.base_text
@@ -77,22 +82,46 @@ class Window(QWidget):
     def set_last_window(self, hwnd_window):
         self.last_window = hwnd_window
 
-    def traslate_text(self):
+    @asyncSlot()  
+    async def traslate_text(self):  
         self.set_base_text(self.input_text.text())
-        self.set_translated_text(
-            simulate_traslation(text_=self.get_base_text(), from_="Esp", to_="Eng")
+        
+        translated = await translate(
+            text_=self.get_base_text(), 
+            from_="es", 
+            to_="en"
         )
-        paste_traslation(
-            text=self.get_translated_text(),
-            hwnd_window=self.get_last_window()
-        )
-        self.hide_window()
+        self.set_translated_text(translated)
+        
+        if self.get_translated_text() is None:
+            print("entro")
+            self.input_text.setStyleSheet("""
+                QLineEdit {
+                    border: none;
+                    background: red;
+                    color: white;
+                    font-size: 18px;
+                    padding: 8px;
+                }
+            """)
 
-    def show_window(self):
+        if self.get_translated_text() is not None:
+            paste_traslation(
+                text=self.get_translated_text(),
+                hwnd_window=self.get_last_window(),
+                win_mode=self.get_window_mode()
+            )
+            self.hide_window()
+
+
+
+    def show_window(self): #shows the window positioning it in front of everything and centering it, also focuses the input
         self.center_popup()
         self.input_text.clear()
-        self.input_text.setFocus()
         self.show()
+        self.raise_()
+        self.activateWindow()
+        QTimer.singleShot(50, lambda: self.input_text.setFocus())
 
     def hide_window(self):
         self.hide()
@@ -108,5 +137,5 @@ class Window(QWidget):
             self.hide_window()
 
     def focusOutEvent(self, event):
+        super().focusOutEvent(event)
         self.hide_window()
-

@@ -22,9 +22,11 @@ class Config:
     def get_default_from(self):
         return self.get_default()["from"]
     
+"""
 configuracion = Config("config.json")
 print("defatul: ",configuracion.get_default())
 
 print("languajes: ",configuracion.get_languages())
 
 print("default_to: ", configuracion.get_deafult_to_())
+"""
