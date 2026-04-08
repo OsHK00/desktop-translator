@@ -1,6 +1,7 @@
 import customtkinter as ctk
-from translate import simulate_traslation
+from translate import translate
 from clipboard import paste_traslation
+import asyncio
 
 class Popup:
     def __init__(self, root=None):
@@ -79,9 +80,11 @@ class Popup:
     #traducira el texto y guarda valores en las variables
     def traslate_text(self, event=None):
         self.set_base_text(str(self.entry.get()))
-        self.set_translated_text(simulate_traslation(text_=self.get_base_text(), from_="Esp", to_="Eng"))
-        paste_traslation(text=self.get_translated_text(), hwnd_window=self.get_last_window())
-        self.close()
+        self.set_translated_text(asyncio.run(translate(text_=self.get_base_text(), from_="es", to_="en")))
+        if self.get_translated_text() is not None:
+
+            paste_traslation(text=self.get_translated_text(), hwnd_window=self.get_last_window())
+            self.close()
 
     def focus_out():
         pass

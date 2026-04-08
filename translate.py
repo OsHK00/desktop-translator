@@ -1,5 +1,20 @@
-def simulate_traslation(text_ : str, to_ : str, from_ :str):
-    traduccion = ("traduciendo: " f"'{text_}' *de* {from_} *hacia* {to_}")
-    #print(traduccion)
-    return traduccion
+from googletrans import Translator
+from loadconfig import Config
+
+config = Config("config.json")
+translator = Translator()
+
+
+
+async def translate(text_ : str, to_ : str, from_ : str):
+    try:
+        if to_ == None:
+            print("Auto detect")
+            traducion = await translator.translate(text_,dest=to_)
+        else:
+            traducion = await translator.translate(text_,src=from_, dest=to_)
+        return traducion.text
+    except Exception as e:
+        return("error traduciendo: ", e)
+    
 

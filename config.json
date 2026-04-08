@@ -1,0 +1,11 @@
+{
+    "languages":{
+        "Spanish":"es",
+        "English":"en",
+        "Japanese":"ja"
+    },
+    "default":{
+        "to":"es",
+        "from":"en"
+    }
+}
