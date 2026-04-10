@@ -1,11 +1,16 @@
 {
-    "languages":{
-        "Spanish":"es",
-        "English":"en",
-        "Japanese":"ja"
+    "languages": {
+        "Spanish": "es",
+        "English": "en",
+        "Japanese": "ja",
+        "French": "fr",
+        "German": "de",
+        "Italian": "it",
+        "Portuguese": "pt",
+        "Russian": "ru"
     },
-    "default":{
-        "to":"es",
-        "from":"en"
+    "default": {
+        "to": "en",
+        "from": "es"
     }
 }

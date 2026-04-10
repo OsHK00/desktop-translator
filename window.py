@@ -5,6 +5,7 @@ from translate import translate
 from clipboard import paste_traslation
 from PyQt6.QtCore import QTimer
 from qasync import QEventLoop, asyncSlot 
+from loadconfig import Config
 
 class Window(QWidget):
     def __init__(self):
@@ -22,8 +23,9 @@ class Window(QWidget):
         self.translated_text = ""
         self.last_window = None
         self.container = self.configContainer()
-        self.configLayout(self.container)
         self.win_mode = None
+        self.config = Config(config_file="config.json")
+        self.configLayout(self.container)
 
     def set_window_mode(self, mode):
         self.win_mode = mode
@@ -42,13 +44,17 @@ class Window(QWidget):
         """)
         return container
 
-    def configLayout(self, container):
+    def configLayout(self, container): 
         layout = QHBoxLayout(container)
         icon = QLabel()
         icon.setPixmap(self.iconImage.scaled(40, 40))
         self.input_text = QLineEdit() 
-        #self.input_text.setPlaceholderText("Escribe el texto a traducir y presiona Enter...")
-        self.button = QPushButton("prueba")
+        self.input_text.setPlaceholderText("Escribe el texto a traducir y presiona Enter...")
+        self.button = QPushButton("")
+        self.button.setText(f"{self.config.get_default_from()}, {self.config.get_default_to()}")
+        self.button.clicked.connect(self.swap_helper)
+
+        
         
         self.input_text.setStyleSheet("""
             QLineEdit {
@@ -85,11 +91,12 @@ class Window(QWidget):
     @asyncSlot()  
     async def traslate_text(self):  
         self.set_base_text(self.input_text.text())
+        from_target = self.config.get_default()
         
         translated = await translate(
             text_=self.get_base_text(), 
-            from_="es", 
-            to_="en"
+            from_=from_target["from"], 
+            to_=from_target["to"]
         )
         self.set_translated_text(translated)
         
@@ -113,6 +120,9 @@ class Window(QWidget):
             )
             self.hide_window()
 
+
+    def swap_helper(self):
+        self.config.swap_default()
 
 
     def show_window(self): #shows the window positioning it in front of everything and centering it, also focuses the input

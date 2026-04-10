@@ -72,7 +72,7 @@ listener.mode_int.connect(lambda mode: window.set_window_mode(mode))
 listener.stopped.connect(app.quit)
 listener.start()
 
-window.show_window()
+#window.show_window()
 
 with loop:
     loop.run_forever()

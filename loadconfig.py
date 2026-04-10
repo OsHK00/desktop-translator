@@ -16,17 +16,35 @@ class Config:
     def get_languages(self):
         return self.config["languages"]
     
-    def get_deafult_to_(self):
+    def get_default_to(self):
         return self.get_default()["to"]
     
     def get_default_from(self):
-        return self.get_default()["from"]
+        return self.get_default()["from"] 
     
+
+    def set_default_to(self, to_):
+        pass
+    def set_default_from(self, from_):
+        pass
+    def swap_default(self):
+        pre_from = self.get_default_from()
+        pre_to = self.get_default_to()
+
+        self.config["default"]["from"] = pre_to
+        self.config["default"]["to"] = pre_from
+
+        with open("config.json", mode="w", encoding="utf-8") as f:
+            json.dump(self.config, f, ensure_ascii=False, indent=4)
+
+
+
 """
 configuracion = Config("config.json")
 print("defatul: ",configuracion.get_default())
 
 print("languajes: ",configuracion.get_languages())
 
-print("default_to: ", configuracion.get_deafult_to_())
-"""
+configuracion.swap_default()
+print("default_to: ", configuracion.get_deafult_to())
+""" 
