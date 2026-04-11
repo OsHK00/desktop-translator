@@ -1,21 +1,32 @@
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
+from languages_panel import LanguagePanel
 from translate import translate 
 from clipboard import paste_traslation
 from PyQt6.QtCore import QTimer
 from qasync import QEventLoop, asyncSlot 
 from loadconfig import Config
+import time
 
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        self.resize(800, 60)
+        self.resize(900, 60)
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.Tool |
             Qt.WindowType.WindowStaysOnTopHint
         )
+        self.config = Config(config_file="config.json")
+
+        self.language_panel = LanguagePanel(
+            self,
+            default_from=self.config.get_default_from(),
+            default_to=self.config.get_default_to()
+        )
+        self.load_languages_from_config()
+
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.iconImage = QPixmap("assets/translate-icon.png")
         self.hide()
@@ -24,8 +35,17 @@ class Window(QWidget):
         self.last_window = None
         self.container = self.configContainer()
         self.win_mode = None
-        self.config = Config(config_file="config.json")
         self.configLayout(self.container)
+        self.setStyleSheet("""
+            QWidget {
+                border: none;
+                outline: none;
+                margin: 0px;
+                padding: 0px;
+            }
+        """)
+
+
 
     def set_window_mode(self, mode):
         self.win_mode = mode
@@ -35,27 +55,96 @@ class Window(QWidget):
 
     def configContainer(self):
         container = QWidget(self)
-        container.setGeometry(0, 0, 800, 60)
+        container.setGeometry(0, 0, 900, 60)
         container.setStyleSheet("""
             QWidget {
                 background-color: rgba(0, 0, 0, 255);
-                border-radius: 15px;
+                border-radius: 12px;
+                border: none;
+                outline: none;
+                margin: 0px;
+                padding: 0px;
             }
         """)
         return container
 
+
+
+
+    
+    def load_languages_from_config(self):
+        languages = self.config.get_favorites()
+        default_from = self.config.get_default_from()
+        default_to = self.config.get_default_to()
+        
+
+        for language_name, language_code in languages.items():
+            self.language_panel.add_language(language_code, language_name)
+
+
     def configLayout(self, container): 
         layout = QHBoxLayout(container)
         icon = QLabel()
+        #layout.setContentsMargins(0, 0, 0, 0)
+        #layout.setSpacing(0)
         icon.setPixmap(self.iconImage.scaled(40, 40))
         self.input_text = QLineEdit() 
-        self.input_text.setPlaceholderText("Escribe el texto a traducir y presiona Enter...")
-        self.button = QPushButton("")
-        self.button.setText(f"{self.config.get_default_from()}, {self.config.get_default_to()}")
-        self.button.clicked.connect(self.swap_helper)
+        self.button_from = QPushButton(f"{ self.config.get_default_from().capitalize()}")
+        self.button_switch = QPushButton("")
+        self.button_to = QPushButton(f"{self.config.get_default_to().capitalize()}")
+        self.button_switch.setText( "⮂" )
+        self.button_switch.clicked.connect(self.swap_helper)
+        self.button_from.setStyleSheet("""
+            QPushButton {
+                padding: 8px 10px;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #302d2d;
+            }
+            QPushButton:pressed {
+                background-color: white;
+                color: black;
+            }
+        """)
 
-        
-        
+        self.button_to.setStyleSheet("""
+            QPushButton {
+                padding: 8px 10px;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #302d2d;
+            }
+            QPushButton:pressed {
+                background-color: white;
+                color: black;
+            }
+        """)
+        self.button_switch.setStyleSheet("""
+            QPushButton {
+                padding: 8px 8px;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #302d2d;
+            }
+            QPushButton:pressed {
+                background-color: #003d82;
+            }
+        """)
         self.input_text.setStyleSheet("""
             QLineEdit {
                 border: none;
@@ -66,9 +155,15 @@ class Window(QWidget):
             }
         """)
         self.input_text.returnPressed.connect(self.traslate_text)
-        layout.addWidget(icon)
+        #layout.addWidget(icon)
+
+        self.button_from.clicked.connect(lambda: self.language_panel.show_panel(self.set_from_language, mode="from"))
+        self.button_to.clicked.connect(lambda: self.language_panel.show_panel(self.set_to_language, mode="to"))
+            
         layout.addWidget(self.input_text)
-        layout.addWidget(self.button)
+        layout.addWidget(self.button_from)
+        layout.addWidget(self.button_switch)
+        layout.addWidget(self.button_to)
 
     def get_base_text(self):
         return self.base_text
@@ -89,7 +184,8 @@ class Window(QWidget):
         self.last_window = hwnd_window
 
     @asyncSlot()  
-    async def traslate_text(self):  
+    async def traslate_text(self):
+        #self.input_text.setDisabled(True)  
         self.set_base_text(self.input_text.text())
         from_target = self.config.get_default()
         
@@ -99,20 +195,10 @@ class Window(QWidget):
             to_=from_target["to"]
         )
         self.set_translated_text(translated)
-        
-        if self.get_translated_text() is None:
-            print("entro")
-            self.input_text.setStyleSheet("""
-                QLineEdit {
-                    border: none;
-                    background: red;
-                    color: white;
-                    font-size: 18px;
-                    padding: 8px;
-                }
-            """)
+
 
         if self.get_translated_text() is not None:
+            print("jocda")
             paste_traslation(
                 text=self.get_translated_text(),
                 hwnd_window=self.get_last_window(),
@@ -123,9 +209,26 @@ class Window(QWidget):
 
     def swap_helper(self):
         self.config.swap_default()
+        print("coño")
+        self.button_switch.setText( "⮂" )
+        self.button_from.setText(f"{ self.config.get_default_from().capitalize()}")
+        self.button_to.setText(f"{self.config.get_default_to().capitalize()}")
+
+        self.language_panel.selected_from = self.config.get_default_from()
+        self.language_panel.selected_to = self.config.get_default_to()
 
 
-    def show_window(self): #shows the window positioning it in front of everything and centering it, also focuses the input
+    def set_from_language(self, language_code: str):
+        self.config.set_default_from(language_code)
+        self.button_from.setText(language_code.capitalize())
+
+    def set_to_language(self, language_code: str):
+        print("deberia")
+        self.config.set_default_to(language_code)
+        self.button_to.setText(language_code.capitalize())
+
+
+    def show_window(self):
         self.center_popup()
         self.input_text.clear()
         self.show()
@@ -135,6 +238,7 @@ class Window(QWidget):
 
     def hide_window(self):
         self.hide()
+        self.language_panel.hide_panel()
 
     def center_popup(self):
         screen = QApplication.primaryScreen().geometry()

@@ -22,11 +22,17 @@ class Config:
     def get_default_from(self):
         return self.get_default()["from"] 
     
+    def get_favorites(self):
+        return self.config["favorites"]
 
     def set_default_to(self, to_):
-        pass
+        self.config["default"]["to"] = to_
+        with open("config.json", mode="w", encoding="utf-8") as f:
+            json.dump(self.config, f, ensure_ascii=False, indent=4)
     def set_default_from(self, from_):
-        pass
+        self.config["default"]["from"] = from_
+        with open("config.json", mode="w", encoding="utf-8") as f:
+            json.dump(self.config, f, ensure_ascii=False, indent=4)
     def swap_default(self):
         pre_from = self.get_default_from()
         pre_to = self.get_default_to()
@@ -37,14 +43,3 @@ class Config:
         with open("config.json", mode="w", encoding="utf-8") as f:
             json.dump(self.config, f, ensure_ascii=False, indent=4)
 
-
-
-"""
-configuracion = Config("config.json")
-print("defatul: ",configuracion.get_default())
-
-print("languajes: ",configuracion.get_languages())
-
-configuracion.swap_default()
-print("default_to: ", configuracion.get_deafult_to())
-""" 

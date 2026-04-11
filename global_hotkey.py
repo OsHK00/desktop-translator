@@ -7,6 +7,7 @@ import sys
 import asyncio
 from qasync import QEventLoop 
 from window import Window
+from tray import AppTray
 
 class HotkeyListener(QObject):
     ##Declared signal for comunication with main thread
@@ -52,13 +53,14 @@ class HotkeyListener(QObject):
         print("Traducción:", window.get_translated_text())
 
 app = QApplication(sys.argv)
+app.setQuitOnLastWindowClosed(False)
 
 loop = QEventLoop(app)
 asyncio.set_event_loop(loop)
 
-
 window = Window()
 listener = HotkeyListener()
+tray = AppTray(app, window)
 
 # Connect signal with main thread
 listener.activated.connect(lambda hwnd: (

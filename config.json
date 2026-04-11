@@ -11,6 +11,18 @@
     },
     "default": {
         "to": "en",
-        "from": "es"
+        "from": "ja"
+    },
+    "favorites": {
+        "Spanish": "es",
+        "English": "en",
+        "Japanese": "ja",
+        "Italian": "it"
+    },
+    "Text_en": {
+        "placeholder": "Type here to translate..."
+    },
+    "Text_es": {
+        "placeholder": "Escribe aquí para traducir..."
     }
 }
