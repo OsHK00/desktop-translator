@@ -1,6 +1,7 @@
-from pathlib import Path
+import sys
+import time
 
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
 from translateapp.ui.languages_panel import LanguagePanel
@@ -9,8 +10,11 @@ from translateapp.core.clipboard import paste_traslation
 from PyQt6.QtCore import QTimer
 from qasync import asyncSlot 
 from translateapp.config.loadconfig import Config
+from translateapp.paths import default_window_icon_path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+if sys.platform == "win32":
+    import win32api
+    import win32gui
 
 class Window(QWidget):
     def __init__(self):
@@ -31,11 +35,35 @@ class Window(QWidget):
         self.load_languages_from_config()
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.iconImage = QPixmap(str(PROJECT_ROOT / "assets" / "translate-icon.png"))
+        icon_file = default_window_icon_path()
+        self.iconImage = QPixmap(str(icon_file))
+        self.setWindowIcon(QIcon(str(icon_file)))
         self.hide()
         self.base_text = ""
         self.translated_text = ""
         self.last_window = None
+        self._ignore_focus_out_until = 0.0
+        self._translation_bar_primed = False
+        self._container_style_normal = """
+            QWidget {
+                background-color: rgba(0, 0, 0, 255);
+                border-radius: 12px;
+                border: none;
+                outline: none;
+                margin: 0px;
+                padding: 0px;
+            }
+        """
+        self._container_style_translating = """
+            QWidget {
+                background-color: #1c2026;
+                border-radius: 12px;
+                border: 2px solid #3d8fd9;
+                outline: none;
+                margin: 0px;
+                padding: 0px;
+            }
+        """
         self.container = self.configContainer()
         self.win_mode = None
         self.configLayout(self.container)
@@ -59,16 +87,7 @@ class Window(QWidget):
     def configContainer(self):
         container = QWidget(self)
         container.setGeometry(0, 0, 900, 60)
-        container.setStyleSheet("""
-            QWidget {
-                background-color: rgba(0, 0, 0, 255);
-                border-radius: 12px;
-                border: none;
-                outline: none;
-                margin: 0px;
-                padding: 0px;
-            }
-        """)
+        container.setStyleSheet(self._container_style_normal)
         return container
 
 
@@ -168,6 +187,15 @@ class Window(QWidget):
         layout.addWidget(self.button_switch)
         layout.addWidget(self.button_to)
 
+    def _set_translating_ui(self, translating: bool) -> None:
+        self.container.setStyleSheet(
+            self._container_style_translating if translating else self._container_style_normal
+        )
+        self.input_text.setEnabled(not translating)
+        self.button_from.setEnabled(not translating)
+        self.button_switch.setEnabled(not translating)
+        self.button_to.setEnabled(not translating)
+
     def get_base_text(self):
         return self.base_text
 
@@ -188,25 +216,27 @@ class Window(QWidget):
 
     @asyncSlot()  
     async def traslate_text(self):
-        #self.input_text.setDisabled(True)  
-        self.set_base_text(self.input_text.text())
-        from_target = self.config.get_default()
-        
-        translated = await translate(
-            text_=self.get_base_text(), 
-            from_=from_target["from"], 
-            to_=from_target["to"]
-        )
-        self.set_translated_text(translated)
+        self._set_translating_ui(True)
+        try:
+            self.set_base_text(self.input_text.text())
+            from_target = self.config.get_default()
 
-
-        if self.get_translated_text() is not None:
-            paste_traslation(
-                text=self.get_translated_text(),
-                hwnd_window=self.get_last_window(),
-                win_mode=self.get_window_mode()
+            translated = await translate(
+                text_=self.get_base_text(),
+                from_=from_target["from"],
+                to_=from_target["to"],
             )
-            self.hide_window()
+            self.set_translated_text(translated)
+
+            if self.get_translated_text() is not None:
+                paste_traslation(
+                    text=self.get_translated_text(),
+                    hwnd_window=self.get_last_window(),
+                    win_mode=self.get_window_mode(),
+                )
+                self.hide_window()
+        finally:
+            self._set_translating_ui(False)
 
 
     def swap_helper(self):
@@ -228,15 +258,62 @@ class Window(QWidget):
         self.button_to.setText(language_code.capitalize())
 
 
+    def _win32_bring_to_foreground(self) -> None:
+        hwnd = int(self.winId())
+        fg = win32gui.GetForegroundWindow()
+        cur_tid = win32api.GetCurrentThreadId()
+        fg_tid, _ = win32gui.GetWindowThreadProcessId(fg)
+        attached = False
+        try:
+            if fg_tid and fg_tid != cur_tid:
+                win32gui.AttachThreadInput(cur_tid, fg_tid, True)
+                attached = True
+            win32gui.SetForegroundWindow(hwnd)
+        finally:
+            if attached:
+                win32gui.AttachThreadInput(cur_tid, fg_tid, False)
+
+    def prime_translation_bar_once(self) -> None:
+        """First real show/hide warms Qt + Win32 so the hotkey path works on first user use."""
+        if self._translation_bar_primed:
+            return
+
+        def _finish_prime() -> None:
+            self.hide_window()
+            self._translation_bar_primed = True
+
+        self._ignore_focus_out_until = time.monotonic() + 0.6
+        self.center_popup()
+        self.input_text.clear()
+        self._set_translating_ui(False)
+        self.show()
+        self.raise_()
+        self.activateWindow()
+        if sys.platform == "win32":
+            try:
+                self._win32_bring_to_foreground()
+            except Exception:
+                pass
+        QTimer.singleShot(200, _finish_prime)
+
     def show_window(self):
+        self._set_translating_ui(False)
         self.center_popup()
         self.input_text.clear()
         self.show()
         self.raise_()
         self.activateWindow()
+        # First paint on Windows often steals/restores focus; avoid closing immediately.
+        self._ignore_focus_out_until = time.monotonic() + 0.35
+        if sys.platform == "win32":
+            try:
+                self._win32_bring_to_foreground()
+            except Exception:
+                pass
         QTimer.singleShot(50, lambda: self.input_text.setFocus())
 
     def hide_window(self):
+        self._set_translating_ui(False)
         self.hide()
         self.language_panel.hide_panel()
 
@@ -252,4 +329,6 @@ class Window(QWidget):
 
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
+        if time.monotonic() < self._ignore_focus_out_until:
+            return
         self.hide_window()

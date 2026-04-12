@@ -4,7 +4,7 @@ from PyQt6.QtCore import QObject
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+from translateapp.paths import app_root, default_window_icon_path
 
 
 class AppTray(QObject):
@@ -12,9 +12,9 @@ class AppTray(QObject):
         super().__init__()
         self.app = app
         self.window = window
-        final_icon_path = Path(icon_path) if icon_path else (PROJECT_ROOT / "assets" / "translate-icon.png")
+        final_icon_path = Path(icon_path) if icon_path else default_window_icon_path()
         if not final_icon_path.is_absolute():
-            final_icon_path = PROJECT_ROOT / final_icon_path
+            final_icon_path = app_root() / final_icon_path
 
         self.tray = QSystemTrayIcon(QIcon(str(final_icon_path)), self.app)
         self.tray.setToolTip("Desktop Translator")

@@ -10,8 +10,8 @@
         "Russian": "ru"
     },
     "default": {
-        "to": "es",
-        "from": "it"
+        "to": "ja",
+        "from": "en"
     },
     "favorites": {
         "Spanish": "es",
@@ -24,5 +24,10 @@
     },
     "Text_es": {
         "placeholder": "Escribe aquí para traducir..."
+    },
+    "keyboard_shortcut": {
+        "activate": "<ctrl>+<shift>+0",
+        "stop": "<ctrl>+<shift>+9",
+        "show_translation": "<ctrl>+<shift>+8"
     }
 }

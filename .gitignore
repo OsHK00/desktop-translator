@@ -4,3 +4,7 @@
 *.pyc
 .venv
 __pycache__
+.log
+/dist
+/build
+/logs

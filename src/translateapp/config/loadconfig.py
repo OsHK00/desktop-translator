@@ -1,9 +1,16 @@
 from pathlib import Path
 import json
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+from translateapp.paths import app_root
+
+PROJECT_ROOT = app_root()
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "config.json"
 DEFAULT_CONFIG_LOG_PATH = PROJECT_ROOT / "logs" / "app.log"
+DEFAULT_KEYBOARD_SHORTCUT = {
+    "activate": "<ctrl>+<shift>+0",
+    "stop": "<ctrl>+<shift>+9",
+    "show_translation": "<ctrl>+<shift>+8",
+}
 
 
 class Config:
@@ -14,6 +21,25 @@ class Config:
 
         with self.config_path.open(mode="r", encoding="utf-8") as f:
             self.config = json.load(f)
+        self._ensure_config_schema()
+
+    def _save(self):
+        with self.config_path.open(mode="w", encoding="utf-8") as f:
+            json.dump(self.config, f, ensure_ascii=False, indent=4)
+
+    def _ensure_config_schema(self):
+        changed = False
+        keyboard_section = self.config.get("keyboard_shortcut")
+        if not isinstance(keyboard_section, dict):
+            self.config["keyboard_shortcut"] = DEFAULT_KEYBOARD_SHORTCUT.copy()
+            changed = True
+        else:
+            for key, value in DEFAULT_KEYBOARD_SHORTCUT.items():
+                if key not in keyboard_section:
+                    keyboard_section[key] = value
+                    changed = True
+        if changed:
+            self._save()
 
     def get_default(self):
         data = self.config["default"]
@@ -36,13 +62,11 @@ class Config:
 
     def set_default_to(self, to_):
         self.config["default"]["to"] = to_
-        with self.config_path.open(mode="w", encoding="utf-8") as f:
-            json.dump(self.config, f, ensure_ascii=False, indent=4)
+        self._save()
 
     def set_default_from(self, from_):
         self.config["default"]["from"] = from_
-        with self.config_path.open(mode="w", encoding="utf-8") as f:
-            json.dump(self.config, f, ensure_ascii=False, indent=4)
+        self._save()
 
     def swap_default(self):
         pre_from = self.get_default_from()
@@ -51,8 +75,7 @@ class Config:
         self.config["default"]["from"] = pre_to
         self.config["default"]["to"] = pre_from
 
-        with self.config_path.open(mode="w", encoding="utf-8") as f:
-            json.dump(self.config, f, ensure_ascii=False, indent=4)
+        self._save()
 
     def get_root_path(self):
         return PROJECT_ROOT
@@ -62,3 +85,18 @@ class Config:
 
     def get_log_path(self):
         return DEFAULT_CONFIG_LOG_PATH
+    
+    def get_keyboard_shortcut_start(self):
+        return self.config.get("keyboard_shortcut", {}).get(
+            "activate", DEFAULT_KEYBOARD_SHORTCUT["activate"]
+        )
+    
+    def get_keyboard_shortcut_stop(self):
+        return self.config.get("keyboard_shortcut", {}).get(
+            "stop", DEFAULT_KEYBOARD_SHORTCUT["stop"]
+        )
+    
+    def get_keyboard_shortcut_show_translation(self):
+        return self.config.get("keyboard_shortcut", {}).get(
+            "show_translation", DEFAULT_KEYBOARD_SHORTCUT["show_translation"]
+        )

@@ -3,6 +3,8 @@ from pathlib import Path
 
 
 def _ensure_src_on_path() -> None:
+    if getattr(sys, "frozen", False):
+        return
     if __package__ in (None, ""):
         src = Path(__file__).resolve().parents[1]
         root = str(src)
