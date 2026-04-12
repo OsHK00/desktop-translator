@@ -1,6 +1,9 @@
 import asyncio
 import sys
 
+import logging
+import time
+
 import win32con
 import win32gui
 from pynput import keyboard
@@ -18,6 +21,7 @@ class HotkeyListener(QObject):
     stopped = pyqtSignal()
 
     def __init__(self, window: Window):
+        self.logger = logging.getLogger(__name__)
         super().__init__()
         self.window = window
         self.window_mode = None
@@ -31,20 +35,16 @@ class HotkeyListener(QObject):
             }
         )
         self.hotkey.start()
-        print("Listening Hotkeys. . .")
+        self.logger.info("Servicio ejecutado")
+
+
 
     def _on_activate(self):
+        time.sleep(0.05)
         hwnd = win32gui.GetForegroundWindow()
         placement = win32gui.GetWindowPlacement(hwnd)
         mode = placement[1]
         self.set_window_mode(mode)
-        print("Window mode: ", mode)
-        if mode == win32con.SW_SHOWMAXIMIZED:
-            print("Maximizada")
-        elif mode == win32con.SW_SHOWMINIMIZED:
-            print("Minimizada")
-        elif mode == win32con.SW_SHOWNORMAL:
-            print("Normal")
         self.activated.emit(hwnd)
         self.mode_int.emit(mode)
 
@@ -55,10 +55,11 @@ class HotkeyListener(QObject):
         return self.window_mode
 
     def _on_stop(self):
+        self.logger.info("Servicio detenido")
         self.stopped.emit()
 
     def _on_show_translation(self):
-        print("Traduccion:", self.window.get_translated_text())
+        self.logger.info("Traduccion: %s", self.window.get_translated_text())
 
 
 def run():

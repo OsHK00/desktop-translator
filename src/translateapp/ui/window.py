@@ -201,7 +201,6 @@ class Window(QWidget):
 
 
         if self.get_translated_text() is not None:
-            print("jocda")
             paste_traslation(
                 text=self.get_translated_text(),
                 hwnd_window=self.get_last_window(),
@@ -212,7 +211,6 @@ class Window(QWidget):
 
     def swap_helper(self):
         self.config.swap_default()
-        print("coño")
         self.button_switch.setText( "⮂" )
         self.button_from.setText(f"{ self.config.get_default_from().capitalize()}")
         self.button_to.setText(f"{self.config.get_default_to().capitalize()}")
@@ -226,7 +224,6 @@ class Window(QWidget):
         self.button_from.setText(language_code.capitalize())
 
     def set_to_language(self, language_code: str):
-        print("deberia")
         self.config.set_default_to(language_code)
         self.button_to.setText(language_code.capitalize())
 

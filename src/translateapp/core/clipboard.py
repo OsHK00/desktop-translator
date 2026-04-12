@@ -5,8 +5,11 @@ import win32api
 import time
 from pynput.keyboard import Controller, Key
 
+import logging
+
 keyboard = Controller()
 
+logger = logging.getLogger(__name__)
 def paste_traslation(text, hwnd_window, win_mode):
     try:
         last_clipboard = pyperclip.paste()
@@ -22,7 +25,7 @@ def paste_traslation(text, hwnd_window, win_mode):
             win32gui.ShowWindow(hwnd_window, win32con.SW_MAXIMIZE)
         win32gui.SetForegroundWindow(hwnd_window)
     except Exception as e:
-        print("unable to restore windows focus", e)
+        logger.error("unable to restore windows focus: %s", e)
 
         return
     time.sleep(0.2)

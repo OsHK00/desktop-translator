@@ -3,6 +3,7 @@ import json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "config.json"
+DEFAULT_CONFIG_LOG_PATH = PROJECT_ROOT / "logs" / "app.log"
 
 
 class Config:
@@ -53,3 +54,11 @@ class Config:
         with self.config_path.open(mode="w", encoding="utf-8") as f:
             json.dump(self.config, f, ensure_ascii=False, indent=4)
 
+    def get_root_path(self):
+        return PROJECT_ROOT
+    
+    def get_config_path(self):
+        return DEFAULT_CONFIG_PATH
+
+    def get_log_path(self):
+        return DEFAULT_CONFIG_LOG_PATH
