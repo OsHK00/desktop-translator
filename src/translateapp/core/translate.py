@@ -1,7 +1,4 @@
 from googletrans import Translator
-from loadconfig import Config
-
-config = Config("config.json")
 translator = Translator()
 
 

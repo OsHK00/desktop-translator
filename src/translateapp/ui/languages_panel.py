@@ -1,7 +1,6 @@
 from PyQt6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, QButtonGroup, QVBoxLayout
 from PyQt6.QtCore import Qt
 import math
-import loadconfig
 
 class LanguagePanel(QWidget):
     def __init__(self, parent=None, default_from=None, default_to=None):
@@ -12,7 +11,6 @@ class LanguagePanel(QWidget):
             Qt.WindowType.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.config = loadconfig.Config(config_file="config.json")
         
         self.PANEL_WIDTH = 450
         self.BUTTON_HEIGHT = 35

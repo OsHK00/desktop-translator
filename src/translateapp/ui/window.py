@@ -1,13 +1,16 @@
+from pathlib import Path
+
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt
-from languages_panel import LanguagePanel
-from translate import translate 
-from clipboard import paste_traslation
+from translateapp.ui.languages_panel import LanguagePanel
+from translateapp.core.translate import translate 
+from translateapp.core.clipboard import paste_traslation
 from PyQt6.QtCore import QTimer
-from qasync import QEventLoop, asyncSlot 
-from loadconfig import Config
-import time
+from qasync import asyncSlot 
+from translateapp.config.loadconfig import Config
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 class Window(QWidget):
     def __init__(self):
@@ -18,7 +21,7 @@ class Window(QWidget):
             Qt.WindowType.Tool |
             Qt.WindowType.WindowStaysOnTopHint
         )
-        self.config = Config(config_file="config.json")
+        self.config = Config()
 
         self.language_panel = LanguagePanel(
             self,
@@ -28,7 +31,7 @@ class Window(QWidget):
         self.load_languages_from_config()
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.iconImage = QPixmap("assets/translate-icon.png")
+        self.iconImage = QPixmap(str(PROJECT_ROOT / "assets" / "translate-icon.png"))
         self.hide()
         self.base_text = ""
         self.translated_text = ""
